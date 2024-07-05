@@ -1019,7 +1019,7 @@ app.get('/comments', async (req, res) => {
 
 app.post('/classwork', async (req, res) => {
     const data = req.body;
-    // console.log("req data \n", data);
+    console.log("req data \n", data);
 
     const classId = data.classId;
     const subject = data.subject;
@@ -1078,17 +1078,17 @@ app.post('/classwork', async (req, res) => {
         }`;
     }
 
-    // console.log("prompt", prompt);
+    console.log("prompt", prompt);
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = await response.text();
-        // console.log(text);
+        console.log(text);
 
         let textToArray = JSON.parse(text);
 
-        // console.log("Response", textToArray);
+        console.log("Response", textToArray);
 
         if (quizNo && (!textToArray?.quizNo || !textToArray?.classId || !textToArray?.date || !textToArray?.time || !textToArray?.examDuration || !textToArray?.level || !textToArray?.topic || classId != textToArray?.classId)) {
             return res.send("Something Went wrong. Please Try Again");
@@ -1201,7 +1201,7 @@ app.delete('/classwork/:id', async (req, res) => {
 // Checking paper
 app.post('/check', async (req, res) => {
     const data = req.body;
-    // console.log(data);
+    console.log(data);
     // const studentName = data.studentName;
     // const studentId = data.studentId;
     // const subject = data.subject;
@@ -1225,7 +1225,7 @@ app.post('/check', async (req, res) => {
                     // const result = checkPaper(extractedQuestionText, extractedAnswerText, studentName, studentId, subject);
                     result
                         .then(text => {
-                            // console.log(text);
+                            console.log(text);
                             let textToArray; // Declare textToArray outside of the try-catch block
 
                             try {
@@ -1408,7 +1408,7 @@ app.post('/payment', async (req, res) => {
         success_url: `https://quick-edu-live-server-side.vercel.app/payment/success/${email}/${transactionId}`,
         fail_url: `https://quick-edu-live-server-side.vercel.app/payment/fail/${transactionId}`,
         cancel_url: `https://quick-edu-live-server-side.vercel.app/payment/cancel/${transactionId}`,
-        ipn_url: 'https://quick-edu-live-server-side.vercel.app/ipn',
+        ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Online',
         product_name: 'Ai Paper Checker',
         product_category: 'Electronic',
@@ -1435,7 +1435,7 @@ app.post('/payment', async (req, res) => {
     sslcz.init(data).then(apiResponse => {
         // Redirect the user to payment gateway
         let GatewayPageURL = apiResponse.GatewayPageURL
-        // console.log('apiResponse to: ', apiResponse)
+        console.log('apiResponse to: ', apiResponse)
         paymentCollection.insertOne({
             ...order,
             transactionId,
@@ -1443,7 +1443,7 @@ app.post('/payment', async (req, res) => {
             service: "Ai Paper Checker"
         })
         res.send({ url: GatewayPageURL })
-        // console.log('Redirecting to: ', GatewayPageURL)
+        console.log('Redirecting to: ', GatewayPageURL)
     });
 });
 
@@ -1451,7 +1451,7 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
     const email = req.params.email;
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
+        return res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.updateOne({ transactionId }, {
         $set:
@@ -1467,18 +1467,18 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
                 account: "Premium"
             }
         });
-        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/success/${email}/${transactionId}`);
+        res.redirect(`https://quickedulive.web.app/myhome/payment/success/${email}/${transactionId}`);
     };
 })
 
 app.post('/payment/fail/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
+        return res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
+        res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
     }
 })
 
@@ -1486,7 +1486,7 @@ app.post('/payment/cancel/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome`);
+        res.redirect(`https://quickedulive.web.app/myhome`);
     }
 });
 
