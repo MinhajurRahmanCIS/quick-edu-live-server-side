@@ -17,7 +17,7 @@ Quick Edu Live is an Educational Platform. With Ai Classroom Feature. It makes e
 
 Project Deploy Site For Client side: 
   \
-Project Deploy Site For Server side: 
+Project Deploy Site For Server side: https://vercel.com/rkznews-projects/quick-edu-live-server-side
 
 
 Project Repository Link For Client side:https://github.com/MinhajurRahmanCIS/quick-edu-live-client-side
