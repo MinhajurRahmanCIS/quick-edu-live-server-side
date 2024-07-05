@@ -1408,7 +1408,7 @@ app.post('/payment', async (req, res) => {
         success_url: `https://quick-edu-live-server-side.vercel.app/payment/success/${email}/${transactionId}`,
         fail_url: `https://quick-edu-live-server-side.vercel.app/payment/fail/${transactionId}`,
         cancel_url: `https://quick-edu-live-server-side.vercel.app/payment/cancel/${transactionId}`,
-        ipn_url: 'http://localhost:3030/ipn',
+        ipn_url: 'https://quick-edu-live-server-side.vercel.app/ipn',
         shipping_method: 'Online',
         product_name: 'Ai Paper Checker',
         product_category: 'Electronic',
@@ -1451,7 +1451,7 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
     const email = req.params.email;
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        return res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.updateOne({ transactionId }, {
         $set:
@@ -1467,18 +1467,18 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
                 account: "Premium"
             }
         });
-        res.redirect(`http://localhost:3000/myhome/payment/success/${email}/${transactionId}`);
+        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/success/${email}/${transactionId}`);
     };
 })
 
 app.post('/payment/fail/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        return res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome/payment/fail`);
     }
 })
 
@@ -1486,7 +1486,7 @@ app.post('/payment/cancel/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`http://localhost:3000/myhome`);
+        res.redirect(`https://quick-edu-live-server-side.vercel.app/myhome`);
     }
 });
 
