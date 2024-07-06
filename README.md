@@ -2,6 +2,13 @@
 
 # Project Name : Quick Edu Live Server (Ai Classroom)
 
+## Teacher Account
+teacher@gmail.com
+Teacher123#
+## Student Account
+student@gmail.com
+Student123#
+
 # Project Info
 Quick Edu Live is an Educational Platform. With Ai Classroom Feature. It makes every thing easy With less human interaction, less time and less thinking.
 
@@ -15,7 +22,7 @@ Quick Edu Live is an Educational Platform. With Ai Classroom Feature. It makes e
 9.      SSLCommerz.
 10.     Tesseract.
 
-Project Deploy Site For Client side: 
+Project Deploy Site For Client side: https://quickedulive.web.app
   \
 Project Deploy Site For Server side: https://vercel.com/rkznews-projects/quick-edu-live-server-side
 
