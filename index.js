@@ -1263,23 +1263,29 @@ app.post('/check', async (req, res) => {
 
 });
 
-app.get('/check', async (req, res) => {
-    let query = {};
-    const getCheck = getData(checkingCollection, query);
-    getCheck
-        .then(result => {
-            return res.send({
-                success: true,
-                message: "Paper Found!!",
-                data: result,
-            });
-        })
-        .catch(err => {
-            return res.send({
-                success: false,
-                message: err?.message
-            })
+app.post('/check', async (req, res) => {
+    try {
+        // Example of processing the images using Tesseract.js
+        const { questionImg, answerImg } = req.body;
+
+        const questionResult = await tesseract.recognize(questionImg, 'eng');
+        const answerResult = await tesseract.recognize(answerImg, 'eng');
+
+        // Your logic to check the results and save to the database
+        const result = await saveToDatabase(questionResult, answerResult);
+
+        res.send({
+            success: true,
+            message: "Paper Checked!!",
+            data: result,
         });
+    } catch (err) {
+        console.error("Error processing the images:", err);
+        res.send({
+            success: false,
+            message: err.message
+        });
+    }
 });
 
 app.get('/check/:id', async (req, res) => {
