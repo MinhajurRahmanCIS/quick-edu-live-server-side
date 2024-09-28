@@ -17,7 +17,8 @@ const { dbConnect,
     submissionCollection,
     feedbackCollection,
     reportCollection,
-    paymentCollection
+    paymentCollection,
+    presentationCollection
 } = require('./DBConnection/DBConnection');
 
 //Requiring CRUD Functions
@@ -254,12 +255,12 @@ app.get('/users/:id', async (req, res) => {
         });
 });
 
-// Creating new class
+// Creating new user
 // app.post('/users', async (req, res) alternative for verifyJWT
 app.post('/users', async (req, res) => {
     const data = req.body;
-    const userExist = await usersCollection.findOne({email: data.email});
-    if(userExist){
+    const userExist = await usersCollection.findOne({ email: data.email });
+    if (userExist) {
         return res.send({
             success: false,
             message: "User Already Exits"
@@ -307,6 +308,44 @@ app.put('/users/:id', async (req, res) => {
             })
         });
 });
+
+app.put('/usersSkill/:id', async (req, res) => {
+    const { id } = req.params;
+    const { skill } = req.body; // skill should be sent from frontend
+    const updatedUserData = { skill }; // skills array
+  
+    try {
+      const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+  
+      if (!user) {
+        return res.status(404).send({ success: false, message: "User not found" });
+      }
+  
+      const hasSkill = user.skills?.includes(skill);
+  
+      if (!hasSkill) {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $addToSet: { skills: skill } } // Only adds skill if not already in the array
+        );
+        return res.send({
+          success: true,
+          message: "Skill added successfully",
+          data: result,
+        });
+      } else {
+        return res.send({
+          success: false,
+          message: "Skill already exists",
+        });
+      }
+    } catch (err) {
+      return res.status(500).send({
+        success: false,
+        message: err.message,
+      });
+    }
+  });  
 
 // Deleting Users
 app.delete('/users/:id', async (req, res) => {
@@ -365,6 +404,58 @@ app.get('/classes', verifyJWT, async (req, res) => {
             })
         });
 });
+
+
+app.get('/suggestedClasses/:email', async (req, res) => {
+    const email = req.params.email; // Get the user email from query params
+  
+    try {
+      // Fetch the user's skills from usersCollection based on email
+      const user = await usersCollection.findOne({ email: email });
+      if (!user) {
+        return res.status(404).send({
+          success: false,
+          message: "User not found"
+        });
+      }
+  
+      const userSkills = user.skills || []; // Get the user's skills array
+      if (userSkills.length === 0) {
+        return res.send({
+          success: false,
+          message: "No skills found for the user."
+        });
+      }
+  
+      // Filter classes that match the user's skills
+      const query = {
+        subject: { $in: userSkills } // Match classes where the subject is in user's skills
+      };
+  
+      const suggestedClasses = await classesCollection.find(query).toArray();
+  
+      if (suggestedClasses.length === 0) {
+        return res.send({
+          success: false,
+          message: "No classes found matching user's skills.",
+          data: []
+        });
+      }
+  
+      return res.send({
+        success: true,
+        message: "Suggestion found!",
+        data: suggestedClasses
+      });
+  
+    } catch (err) {
+      return res.status(500).send({
+        success: false,
+        message: err?.message
+      });
+    }
+  });
+  
 
 // Getting Specific Class
 // app.get('/class/:id', verifyJWT, async (req, res) alternative for verifyJWT
@@ -1263,29 +1354,23 @@ app.post('/check', async (req, res) => {
 
 });
 
-app.post('/check', async (req, res) => {
-    try {
-        // Example of processing the images using Tesseract.js
-        const { questionImg, answerImg } = req.body;
-
-        const questionResult = await tesseract.recognize(questionImg, 'eng');
-        const answerResult = await tesseract.recognize(answerImg, 'eng');
-
-        // Your logic to check the results and save to the database
-        const result = await saveToDatabase(questionResult, answerResult);
-
-        res.send({
-            success: true,
-            message: "Paper Checked!!",
-            data: result,
+app.get('/check', async (req, res) => {
+    let query = {};
+    const getCheck = getData(checkingCollection, query);
+    getCheck
+        .then(result => {
+            return res.send({
+                success: true,
+                message: "Paper Found!!",
+                data: result,
+            });
+        })
+        .catch(err => {
+            return res.send({
+                success: false,
+                message: err?.message
+            })
         });
-    } catch (err) {
-        console.error("Error processing the images:", err);
-        res.send({
-            success: false,
-            message: err.message
-        });
-    }
 });
 
 app.get('/check/:id', async (req, res) => {
@@ -1411,9 +1496,9 @@ app.post('/payment', async (req, res) => {
         total_amount: amount,
         currency: currency,
         tran_id: transactionId, // use unique tran_id for each api call
-        success_url: `https://quick-edu-live-server-side.vercel.app/payment/success/${email}/${transactionId}`,
-        fail_url: `https://quick-edu-live-server-side.vercel.app/payment/fail/${transactionId}`,
-        cancel_url: `https://quick-edu-live-server-side.vercel.app/payment/cancel/${transactionId}`,
+        success_url: `http://localhost:5000/payment/success/${email}/${transactionId}`,
+        fail_url: `http://localhost:5000/payment/fail/${transactionId}`,
+        cancel_url: `http://localhost:5000/payment/cancel/${transactionId}`,
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Online',
         product_name: 'Ai Paper Checker',
@@ -1457,7 +1542,7 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
     const email = req.params.email;
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
+        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
     }
     const result = await paymentCollection.updateOne({ transactionId }, {
         $set:
@@ -1473,18 +1558,18 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
                 account: "Premium"
             }
         });
-        res.redirect(`https://quickedulive.web.app/myhome/payment/success/${email}/${transactionId}`);
+        res.redirect(`http://localhost:3000/myhome/payment/success/${email}/${transactionId}`);
     };
 })
 
 app.post('/payment/fail/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
+        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
     }
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`https://quickedulive.web.app/myhome/payment/fail`);
+        res.redirect(`http://localhost:3000/myhome/payment/fail`);
     }
 })
 
@@ -1492,7 +1577,60 @@ app.post('/payment/cancel/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`https://quickedulive.web.app/myhome`);
+        res.redirect(`http://localhost:3000/myhome`);
+    }
+});
+
+function stripMarkdown(text) {
+    // Remove ```json and ``` from the beginning and end
+    return text.replace(/^```json\n/, '').replace(/\n```$/, '');
+}
+
+// Ai Presentation 
+// AI Presentation Generation and Storage
+app.post('/presentation/:email', async (req, res) => {
+    const { email } = req.params;
+    const { topic, tone, pages, description } = req.body;
+
+    const prompt = `Create a presentation outline on "${topic}" with a ${tone} tone. The presentation should have ${pages} pages. Here's a brief description: ${description}. Please return the result as a JSON array where each object represents a slide with 'title' and 'content' properties.`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = await response.text();
+
+        // Strip Markdown syntax and parse JSON
+        const cleanedText = stripMarkdown(text);
+        const slides = JSON.parse(cleanedText);
+
+        const presentationData = {
+            email,
+            topic,
+            tone,
+            pages,
+            description,
+            slides,
+            createdAt: new Date()
+        };
+
+        const insertResult = await presentationCollection.insertOne(presentationData);
+        res.status(201).send({ message: "Presentation created successfully", id: insertResult.insertedId });
+    } catch (error) {
+        console.error("Error generating or storing presentation:", error);
+        res.status(500).send({ message: "Error creating presentation", error: error.toString() });
+    }
+});
+
+
+// Fetch Presentations
+app.get('/presentation/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const presentations = await presentationCollection.find({ email }).toArray();
+        res.send(presentations);
+    } catch (error) {
+        console.error("Error fetching presentations:", error);
+        res.status(500).send({ message: "Error fetching presentations" });
     }
 });
 

@@ -40,6 +40,7 @@ const submissionCollection = QELDB.collection('submissions');
 const feedbackCollection = QELDB.collection('feedback');
 const reportCollection = QELDB.collection('report');
 const paymentCollection = QELDB.collection('payment');
+const presentationCollection = QELDB.collection('presentation');
 
 
 module.exports = {
@@ -53,5 +54,6 @@ module.exports = {
     submissionCollection,
     feedbackCollection,
     reportCollection,
-    paymentCollection
+    paymentCollection,
+    presentationCollection
 }
