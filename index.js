@@ -18,7 +18,8 @@ const { dbConnect,
     feedbackCollection,
     reportCollection,
     paymentCollection,
-    presentationCollection
+    presentationCollection,
+    moduleCollection
 } = require('./DBConnection/DBConnection');
 
 //Requiring CRUD Functions
@@ -1633,6 +1634,118 @@ app.get('/presentation/:email', async (req, res) => {
         res.status(500).send({ message: "Error fetching presentations" });
     }
 });
+
+// Ai Presentation 
+// AI Presentation Generation and Storage
+app.post('/presentation/:email', async (req, res) => {
+    const { email } = req.params;
+    const { topic, tone, pages, description } = req.body;
+
+    const prompt = `Create a presentation outline on "${topic}" with a ${tone} tone. The presentation should have ${pages} pages. Here's a brief description: ${description}. Avoid using *** these. Please return the result as a JSON array where each object represents a slide with 'title' and 'content' properties.`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = await response.text();
+
+        // Strip Markdown syntax and parse JSON
+        const cleanedText = stripMarkdown(text);
+        const slides = JSON.parse(cleanedText);
+
+        const presentationData = {
+            email,
+            topic,
+            tone,
+            pages,
+            description,
+            slides,
+            createdAt: new Date()
+        };
+
+        const insertResult = await presentationCollection.insertOne(presentationData);
+        res.status(201).send({ message: "Presentation created successfully", id: insertResult.insertedId });
+    } catch (error) {
+        console.error("Error generating or storing presentation:", error);
+        res.status(500).send({ message: "Error creating presentation", error: error.toString() });
+    }
+});
+
+
+// Fetch Presentations
+app.get('/presentation/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const presentations = await presentationCollection.find({ email }).toArray();
+        res.send(presentations);
+    } catch (error) {
+        console.error("Error fetching presentations:", error);
+        res.status(500).send({ message: "Error fetching presentations" });
+    }
+});
+
+
+app.post('/module', async (req, res) => {
+    const { email, topic, tone, pages, description } = req.body;
+
+    const prompt = `Create a course module outline on "${topic}" with a ${tone} tone. The module should have ${pages} chapters. The first chapter (index 0) should be a Table of Contents listing all subsequent chapters without numbering. Each chapter (except the Table of Contents) should have a title and content, with a maximum of 500 words per chapter. Include lists, examples, and answers where appropriate, but only if they enhance the content. For Chapter 2, ensure there's at least one list included. Return the result as a JSON array where each object represents a chapter with 'title', 'content', 'list' (array, optional), 'example' (string, optional), and 'answer' (string, optional) properties.`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = await response.text();
+
+        // Strip Markdown syntax and parse JSON
+        const cleanedText = stripMarkdown(text);
+        const chapters = JSON.parse(cleanedText);
+
+        // Generate Table of Contents
+        const tableOfContents = chapters.slice(1).map(chapter => chapter.title);
+        chapters[0].content = tableOfContents.join('\n');
+
+        const moduleData = {
+            email,
+            topic,
+            tone,
+            pages,
+            description,
+            chapters,
+            createdAt: new Date()
+        };
+
+        const insertResult = await moduleCollection.insertOne(moduleData);
+        res.status(201).send({ message: "Module created successfully", id: insertResult.insertedId });
+    } catch (error) {
+        console.error("Error generating or storing module:", error);
+        res.status(500).send({ message: "Error creating module", error: error.toString() });
+    }
+});
+
+// Fetch Modules (unchanged)
+app.get('/module/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+        const modules = await moduleCollection.find({ email }).toArray();
+        res.send(modules);
+    } catch (error) {
+        console.error("Error fetching modules:", error);
+        res.status(500).send({ message: "Error fetching modules" });
+    }
+});
+
+// Fetch a single module (unchanged)
+app.get('/specificModule/:id', async (req, res) => {
+    try {
+        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id) });
+        if (!module) {
+            return res.status(404).send({ message: "Module not found" });
+        }
+        res.send(module);
+    } catch (error) {
+        console.error("Error fetching module:", error);
+        res.status(500).send({ message: "Error fetching module" });
+    }
+});
+
 
 
 //Root Directory of Server
