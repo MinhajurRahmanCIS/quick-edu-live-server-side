@@ -1685,29 +1685,41 @@ app.get('/presentation/:email', async (req, res) => {
 
 
 app.post('/module', async (req, res) => {
-    const { email, topic, tone, pages, description } = req.body;
+    const { email, name, level } = req.body;
 
-    const prompt = `Create a course module outline on "${topic}" with a ${tone} tone. The module should have ${pages} chapters. The first chapter (index 0) should be a Table of Contents listing all subsequent chapters without numbering. Each chapter (except the Table of Contents) should have a title and content, with a maximum of 500 words per chapter. Include lists, examples, and answers where appropriate, but only if they enhance the content. For Chapter 2, ensure there's at least one list included. Return the result as a JSON array where each object represents a chapter with 'title', 'content', 'list' (array, optional), 'example' (string, optional), and 'answer' (string, optional) properties.`;
+    const prompt = `Create a comprehensive course module outline on "${name}" at the ${level} level.
+    Include a random number of chapters based on the depth required for the ${level} level.
+    Each chapter should have a title and up to 500 words of content, including lists and examples where appropriate.
+    Each chapter must include 5 multiple-choice questions (MCQs), with options labeled (a, b, c, d) and the correct answer provided for each question.
+    At the end of the module, compile a final "All MCQs" section with 20-30 questions randomly selected from the chapters, including their correct answers.
+    Return the result as a valid JSON array where each object represents a chapter with:
+    - 'title': Title of the chapter
+    - 'content': Chapter content
+    - 'mcqs': An array of objects where each object represents an MCQ with 'question', 'options' (array of strings), and 'answer' (string) properties.
+
+    The final object should have:
+    - 'title': 'All MCQs'
+    - 'mcqs': An array of 20-30 MCQs from the module, with each including 'question', 'options', and 'answer'.`;
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = await response.text();
 
-        // Strip Markdown syntax and parse JSON
-        const cleanedText = stripMarkdown(text);
+        // Clean the response text to ensure it's valid JSON
+        const cleanedText = text.replace(/```json|```/g, '').trim();
+
+        // Parse JSON after cleaning
         const chapters = JSON.parse(cleanedText);
 
-        // Generate Table of Contents
-        const tableOfContents = chapters.slice(1).map(chapter => chapter.title);
+        // Generate a Table of Contents from chapter titles (skip the final MCQs section)
+        const tableOfContents = chapters.slice(0, -1).map(chapter => chapter.title);
         chapters[0].content = tableOfContents.join('\n');
 
         const moduleData = {
             email,
-            topic,
-            tone,
-            pages,
-            description,
+            name,
+            level,
             chapters,
             createdAt: new Date()
         };
