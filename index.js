@@ -314,39 +314,39 @@ app.put('/usersSkill/:id', async (req, res) => {
     const { id } = req.params;
     const { skill } = req.body; // skill should be sent from frontend
     const updatedUserData = { skill }; // skills array
-
+  
     try {
-        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
-
-        if (!user) {
-            return res.status(404).send({ success: false, message: "User not found" });
-        }
-
-        const hasSkill = user.skills?.includes(skill);
-
-        if (!hasSkill) {
-            const result = await usersCollection.updateOne(
-                { _id: new ObjectId(id) },
-                { $addToSet: { skills: skill } } // Only adds skill if not already in the array
-            );
-            return res.send({
-                success: true,
-                message: "Skill added successfully",
-                data: result,
-            });
-        } else {
-            return res.send({
-                success: false,
-                message: "Skill already exists",
-            });
-        }
-    } catch (err) {
-        return res.status(500).send({
-            success: false,
-            message: err.message,
+      const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+  
+      if (!user) {
+        return res.status(404).send({ success: false, message: "User not found" });
+      }
+  
+      const hasSkill = user.skills?.includes(skill);
+  
+      if (!hasSkill) {
+        const result = await usersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $addToSet: { skills: skill } } // Only adds skill if not already in the array
+        );
+        return res.send({
+          success: true,
+          message: "Skill added successfully",
+          data: result,
         });
+      } else {
+        return res.send({
+          success: false,
+          message: "Skill already exists",
+        });
+      }
+    } catch (err) {
+      return res.status(500).send({
+        success: false,
+        message: err.message,
+      });
     }
-});
+  });  
 
 // Deleting Users
 app.delete('/users/:id', async (req, res) => {
@@ -409,54 +409,54 @@ app.get('/classes', verifyJWT, async (req, res) => {
 
 app.get('/suggestedClasses/:email', async (req, res) => {
     const email = req.params.email; // Get the user email from query params
-
+  
     try {
-        // Fetch the user's skills from usersCollection based on email
-        const user = await usersCollection.findOne({ email: email });
-        if (!user) {
-            return res.status(404).send({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        const userSkills = user.skills || []; // Get the user's skills array
-        if (userSkills.length === 0) {
-            return res.send({
-                success: false,
-                message: "No skills found for the user."
-            });
-        }
-
-        // Filter classes that match the user's skills
-        const query = {
-            subject: { $in: userSkills } // Match classes where the subject is in user's skills
-        };
-
-        const suggestedClasses = await classesCollection.find(query).toArray();
-
-        if (suggestedClasses.length === 0) {
-            return res.send({
-                success: false,
-                message: "No classes found matching user's skills.",
-                data: []
-            });
-        }
-
+      // Fetch the user's skills from usersCollection based on email
+      const user = await usersCollection.findOne({ email: email });
+      if (!user) {
+        return res.status(404).send({
+          success: false,
+          message: "User not found"
+        });
+      }
+  
+      const userSkills = user.skills || []; // Get the user's skills array
+      if (userSkills.length === 0) {
         return res.send({
-            success: true,
-            message: "Suggestion found!",
-            data: suggestedClasses
+          success: false,
+          message: "No skills found for the user."
         });
-
+      }
+  
+      // Filter classes that match the user's skills
+      const query = {
+        subject: { $in: userSkills } // Match classes where the subject is in user's skills
+      };
+  
+      const suggestedClasses = await classesCollection.find(query).toArray();
+  
+      if (suggestedClasses.length === 0) {
+        return res.send({
+          success: false,
+          message: "No classes found matching user's skills.",
+          data: []
+        });
+      }
+  
+      return res.send({
+        success: true,
+        message: "Suggestion found!",
+        data: suggestedClasses
+      });
+  
     } catch (err) {
-        return res.status(500).send({
-            success: false,
-            message: err?.message
-        });
+      return res.status(500).send({
+        success: false,
+        message: err?.message
+      });
     }
-});
-
+  });
+  
 
 // Getting Specific Class
 // app.get('/class/:id', verifyJWT, async (req, res) alternative for verifyJWT
@@ -1685,10 +1685,6 @@ app.get('/presentation/:email', async (req, res) => {
 
 
 app.post('/module', async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', 'https://quickedulive.web.app');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'content-type');
-
     const { email, name, level } = req.body;
 
     const prompt = `Create a comprehensive course module outline on "${name}" at the ${level} level.
