@@ -1683,43 +1683,63 @@ app.get('/presentation/:email', async (req, res) => {
     }
 });
 
-
+//Course Module
 app.post('/module', async (req, res) => {
-    const { email, name, level } = req.body;
+    const { email, name } = req.body;
 
-    const prompt = `Create a comprehensive course module outline on "${name}" at the ${level} level.
-    Include a random number of chapters based on the depth required for the ${level} level.
-    Each chapter should have a title and up to 500 words of content, including lists and examples where appropriate.
-    Each chapter must include 5 multiple-choice questions (MCQs), with options labeled (a, b, c, d) and the correct answer provided for each question.
-    At the end of the module, compile a final "All MCQs" section with 20-30 questions randomly selected from the chapters, including their correct answers.
-    Return the result as a valid JSON array where each object represents a chapter with:
-    - 'title': Title of the chapter
-    - 'content': Chapter content
-    - 'mcqs': An array of objects where each object represents an MCQ with 'question', 'options' (array of strings), and 'answer' (string) properties.
-
-    The final object should have:
-    - 'title': 'All MCQs'
-    - 'mcqs': An array of 20-30 MCQs from the module, with each including 'question', 'options', and 'answer'.`;
+    const prompt = `Generate a course module outline on "${name}".
+    1. Divide the module into a random number of chapters.
+    2. Each chapter should include:
+       - 'title':
+       - 'content': 
+       - 'teacherScript': A short narrative describing how a teacher would explain or teach the chapter material to students.
+       - 'mcqs': An array of 2 multiple-choice questions (MCQs), each with:
+           - 'question': The question text.
+           - 'options': An array of four options labeled a, b, c, and d.
+           - 'answer': The correct answer as a single character (e.g., 'a', 'b', 'c', or 'd').
+           - 'points': The number of points or marks assigned to the question.
+    3. At the end of the module, create an "All MCQs" section, including 10 randomly selected MCQs from the entire module.
+       - Each MCQ should follow the same format with 'question', 'options', 'answer', and 'points' fields.
+    Return the result as a valid JSON array where:
+    - Each chapter is represented as an object with:
+       - 'title': Title of the chapter.
+       - 'content': Brief outline of the chapter.
+       - 'teacherScript': Narrative describing how a teacher might teach the chapter content.
+       - 'mcqs': An array of 5 MCQ objects.
+    - The final object should be titled "All MCQs" and contain the selected MCQs from the module chapters.`;
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = await response.text();
 
+        console.log("Raw Text:", text); // Debugging raw output
+
         // Clean the response text to ensure it's valid JSON
-        const cleanedText = text.replace(/```json|```/g, '').trim();
+        const cleanedText = text
+            .replace(/```(?:json)?|```|“|”|‘|’/g, '') // Removes backticks and all curly quotes
+            .replace(/\\n/g, '') // Removes newline escape sequences
+            .replace(/\\+/g, '') // Removes any stray backslashes
+            .trim();
 
-        // Parse JSON after cleaning
-        const chapters = JSON.parse(cleanedText);
+        console.log("Cleaned Text:", cleanedText);
 
-        // Generate a Table of Contents from chapter titles (skip the final MCQs section)
-        const tableOfContents = chapters.slice(0, -1).map(chapter => chapter.title);
-        chapters[0].content = tableOfContents.join('\n');
+        let chapters;
+        try {
+            if (cleanedText.trim().length === 0) {
+                throw new Error("Empty response from model");
+            }
+
+            chapters = JSON.parse(cleanedText);
+        } catch (parseError) {
+            console.error("JSON Parsing Error:", parseError);
+            console.error("Cleaned Text during error:", cleanedText);
+            return res.status(500).send({ message: "Error parsing module response", error: parseError.toString() });
+        }
 
         const moduleData = {
             email,
             name,
-            level,
             chapters,
             createdAt: new Date()
         };
@@ -1731,6 +1751,7 @@ app.post('/module', async (req, res) => {
         res.status(500).send({ message: "Error creating module", error: error.toString() });
     }
 });
+
 
 // Fetch Modules (unchanged)
 app.get('/module/:email', async (req, res) => {
@@ -1759,6 +1780,29 @@ app.get('/specificModule/:id', async (req, res) => {
 });
 
 
+// patch a single module 
+app.patch('/specificModule/:id/:email', async (req, res) => {
+    try {
+        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id), email: req.params.email });
+        
+        if (!module) {
+            return res.status(404).send({ message: "Module not found" });
+        }
+        const currentDate = new Date();
+
+        const updateCourseStart = {
+            $set: {
+              courseStartedAt: currentDate
+            },
+          };
+          const result = await moduleCollection.updateOne({ _id: new ObjectId(req.params.id), email: req.params.email }, updateCourseStart);
+
+        res.status(200).send({ message: "Course Started" });
+    } catch (error) {
+        console.error("Error fetching Course:", error);
+        res.status(500).send({ message: "Error fetching Course" });
+    }
+});
 
 //Root Directory of Server
 app.get('/', (req, res) => {
