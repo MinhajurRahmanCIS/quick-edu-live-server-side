@@ -1685,7 +1685,7 @@ app.get('/presentation/:email', async (req, res) => {
 });
 
 //Course Module
-app.post('/module', async (req, res) => {
+app.post('/course', async (req, res) => {
     const { email, name } = req.body;
 
     const prompt = `Generate a course module outline on "${name}".
@@ -1759,7 +1759,7 @@ app.post('/module', async (req, res) => {
 
 
 // Fetch Modules (unchanged)
-app.get('/module/:email', async (req, res) => {
+app.get('/course/:email', async (req, res) => {
     const { email } = req.params;
     try {
         const modules = await moduleCollection.find({ email }).toArray();
