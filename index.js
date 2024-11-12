@@ -48,7 +48,8 @@ const {
 
 //Selected gemini AI Model and configuration 
 // const MODEL_NAME = "gemini-1.0-pro"; // old model
-const MODEL_NAME = "gemini-1.5-flash"; // new model
+// const MODEL_NAME = "gemini-1.5-flash"; // new model
+const MODEL_NAME = "gemini-1.5-pro"; // new model
 const API_KEY = process.env.GEMINI_KEY;
 
 const genAI = new GoogleGenerativeAI(API_KEY);
@@ -314,39 +315,39 @@ app.put('/usersSkill/:id', async (req, res) => {
     const { id } = req.params;
     const { skill } = req.body; // skill should be sent from frontend
     const updatedUserData = { skill }; // skills array
-  
+
     try {
-      const user = await usersCollection.findOne({ _id: new ObjectId(id) });
-  
-      if (!user) {
-        return res.status(404).send({ success: false, message: "User not found" });
-      }
-  
-      const hasSkill = user.skills?.includes(skill);
-  
-      if (!hasSkill) {
-        const result = await usersCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $addToSet: { skills: skill } } // Only adds skill if not already in the array
-        );
-        return res.send({
-          success: true,
-          message: "Skill added successfully",
-          data: result,
-        });
-      } else {
-        return res.send({
-          success: false,
-          message: "Skill already exists",
-        });
-      }
+        const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+
+        if (!user) {
+            return res.status(404).send({ success: false, message: "User not found" });
+        }
+
+        const hasSkill = user.skills?.includes(skill);
+
+        if (!hasSkill) {
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $addToSet: { skills: skill } } // Only adds skill if not already in the array
+            );
+            return res.send({
+                success: true,
+                message: "Skill added successfully",
+                data: result,
+            });
+        } else {
+            return res.send({
+                success: false,
+                message: "Skill already exists",
+            });
+        }
     } catch (err) {
-      return res.status(500).send({
-        success: false,
-        message: err.message,
-      });
+        return res.status(500).send({
+            success: false,
+            message: err.message,
+        });
     }
-  });  
+});
 
 // Deleting Users
 app.delete('/users/:id', async (req, res) => {
@@ -409,54 +410,54 @@ app.get('/classes', verifyJWT, async (req, res) => {
 
 app.get('/suggestedClasses/:email', async (req, res) => {
     const email = req.params.email; // Get the user email from query params
-  
+
     try {
-      // Fetch the user's skills from usersCollection based on email
-      const user = await usersCollection.findOne({ email: email });
-      if (!user) {
-        return res.status(404).send({
-          success: false,
-          message: "User not found"
-        });
-      }
-  
-      const userSkills = user.skills || []; // Get the user's skills array
-      if (userSkills.length === 0) {
+        // Fetch the user's skills from usersCollection based on email
+        const user = await usersCollection.findOne({ email: email });
+        if (!user) {
+            return res.status(404).send({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const userSkills = user.skills || []; // Get the user's skills array
+        if (userSkills.length === 0) {
+            return res.send({
+                success: false,
+                message: "No skills found for the user."
+            });
+        }
+
+        // Filter classes that match the user's skills
+        const query = {
+            subject: { $in: userSkills } // Match classes where the subject is in user's skills
+        };
+
+        const suggestedClasses = await classesCollection.find(query).toArray();
+
+        if (suggestedClasses.length === 0) {
+            return res.send({
+                success: false,
+                message: "No classes found matching user's skills.",
+                data: []
+            });
+        }
+
         return res.send({
-          success: false,
-          message: "No skills found for the user."
+            success: true,
+            message: "Suggestion found!",
+            data: suggestedClasses
         });
-      }
-  
-      // Filter classes that match the user's skills
-      const query = {
-        subject: { $in: userSkills } // Match classes where the subject is in user's skills
-      };
-  
-      const suggestedClasses = await classesCollection.find(query).toArray();
-  
-      if (suggestedClasses.length === 0) {
-        return res.send({
-          success: false,
-          message: "No classes found matching user's skills.",
-          data: []
-        });
-      }
-  
-      return res.send({
-        success: true,
-        message: "Suggestion found!",
-        data: suggestedClasses
-      });
-  
+
     } catch (err) {
-      return res.status(500).send({
-        success: false,
-        message: err?.message
-      });
+        return res.status(500).send({
+            success: false,
+            message: err?.message
+        });
     }
-  });
-  
+});
+
 
 // Getting Specific Class
 // app.get('/class/:id', verifyJWT, async (req, res) alternative for verifyJWT
@@ -1688,11 +1689,12 @@ app.post('/module', async (req, res) => {
     const { email, name } = req.body;
 
     const prompt = `Generate a course module outline on "${name}".
-    1. Divide the module into a random number of chapters.
+    1. Divide the module into five or six of chapters.
     2. Each chapter should include:
-       - 'title':
-       - 'content': 
-       - 'teacherScript': A short narrative describing how a teacher would explain or teach the chapter material to students.
+       - 'title': For Chapter 1, avoid titles like "Table of Content" and start with foundational concepts .
+       - 'content': A comprehensive description of the chapter topic, aiming for around 300-400 words.
+       - 'example': 2 or three real life examples.
+       - 'teacherScript': A short narrative describing how a teacher would explain or teach the chapter material to students, with examples.
        - 'mcqs': An array of 2 multiple-choice questions (MCQs), each with:
            - 'question': The question text.
            - 'options': An array of four options labeled a, b, c, and d.
@@ -1704,9 +1706,12 @@ app.post('/module', async (req, res) => {
     - Each chapter is represented as an object with:
        - 'title': Title of the chapter.
        - 'content': Brief outline of the chapter.
-       - 'teacherScript': Narrative describing how a teacher might teach the chapter content.
+       - 'teacherScript': Narrative describing how a teacher might teach the chapter content with examples as needed.
        - 'mcqs': An array of 5 MCQ objects.
     - The final object should be titled "All MCQs" and contain the selected MCQs from the module chapters.`;
+
+
+
 
     try {
         const result = await model.generateContent(prompt);
@@ -1766,9 +1771,9 @@ app.get('/module/:email', async (req, res) => {
 });
 
 // Fetch a single module (unchanged)
-app.get('/specificModule/:id', async (req, res) => {
+app.get('/specificModule/:id/:email', async (req, res) => {
     try {
-        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id) });
+        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id), email: req.params.email });
         if (!module) {
             return res.status(404).send({ message: "Module not found" });
         }
@@ -1784,7 +1789,7 @@ app.get('/specificModule/:id', async (req, res) => {
 app.patch('/specificModule/:id/:email', async (req, res) => {
     try {
         const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id), email: req.params.email });
-        
+
         if (!module) {
             return res.status(404).send({ message: "Module not found" });
         }
@@ -1792,10 +1797,11 @@ app.patch('/specificModule/:id/:email', async (req, res) => {
 
         const updateCourseStart = {
             $set: {
-              courseStartedAt: currentDate
+                courseStartedAt: currentDate
             },
-          };
-          const result = await moduleCollection.updateOne({ _id: new ObjectId(req.params.id), email: req.params.email }, updateCourseStart);
+        };
+
+        const result = await moduleCollection.updateOne({ _id: new ObjectId(req.params.id), email: req.params.email }, updateCourseStart);
 
         res.status(200).send({ message: "Course Started" });
     } catch (error) {
@@ -1803,6 +1809,8 @@ app.patch('/specificModule/:id/:email', async (req, res) => {
         res.status(500).send({ message: "Error fetching Course" });
     }
 });
+
+
 
 //Root Directory of Server
 app.get('/', (req, res) => {
