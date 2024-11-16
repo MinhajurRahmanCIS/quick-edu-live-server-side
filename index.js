@@ -1685,7 +1685,7 @@ app.get('/presentation/:email', async (req, res) => {
 });
 
 //Course Module
-app.post('/course', async (req, res) => {
+app.post('/module', async (req, res) => {
     const { email, name } = req.body;
 
     const prompt = `Generate a course module outline on "${name}".
@@ -1697,10 +1697,9 @@ app.post('/course', async (req, res) => {
        - 'teacherScript': A short narrative describing how a teacher would explain or teach the chapter material to students, with examples.
        - 'mcqs': An array of 2 multiple-choice questions (MCQs), each with:
            - 'question': The question text.
-           - 'options': An array of four options labeled a, b, c, and d.
+           - 'options': An array of four options labeled a) , b) , c) , and d).
            - 'answer': The correct answer as a single character (e.g., 'a', 'b', 'c', or 'd').
-           - 'points': The number of points or marks assigned to the question.
-    3. At the end of the module, create an "All MCQs" section, including 10 randomly selected MCQs from the entire module.
+    3. At the end of the module, create an "All MCQs" section, 10 new randomly MCQs from the module title.
        - Each MCQ should follow the same format with 'question', 'options', 'answer', and 'points' fields.
     Return the result as a valid JSON array where:
     - Each chapter is represented as an object with:
@@ -1708,7 +1707,7 @@ app.post('/course', async (req, res) => {
        - 'content': Brief outline of the chapter.
        - 'teacherScript': Narrative describing how a teacher might teach the chapter content with examples as needed.
        - 'mcqs': An array of 5 MCQ objects.
-    - The final object should be titled "All MCQs" and contain the selected MCQs from the module chapters.`;
+    - The final object should be titled "All MCQs" and 10 new randomly MCQs from the module title.`;
 
 
 
@@ -1759,7 +1758,7 @@ app.post('/course', async (req, res) => {
 
 
 // Fetch Modules (unchanged)
-app.get('/course/:email', async (req, res) => {
+app.get('/module/:email', async (req, res) => {
     const { email } = req.params;
     try {
         const modules = await moduleCollection.find({ email }).toArray();
@@ -1810,6 +1809,76 @@ app.patch('/specificModule/:id/:email', async (req, res) => {
     }
 });
 
+app.patch('/moduleProgress/:id/:email/:index', async (req, res) => {
+    const submission = req.body;
+    try {
+        const { id, email, index } = req.params;
+        const chapterIndex = parseInt(index, 10);
+
+        if (isNaN(chapterIndex)) {
+            return res.status(400).send({ message: "Invalid chapter index" });
+        }
+
+        const module = await moduleCollection.findOne({
+            _id: new ObjectId(id),
+            email: email
+        });
+
+        if (!module) {
+            return res.status(404).send({ message: "Module not found" });
+        }
+
+        const currentDate = new Date();
+
+        // Update the specific chapter in the array
+        const updateQuery = {
+            $set: {
+                [`chapters.${chapterIndex}.chapterEndAt`]: currentDate, // Using dot notation to target specific chapter
+                [`chapters.${chapterIndex}.submission`]: submission // Using dot notation to target specific chapter
+            },
+        };
+
+        const result = await moduleCollection.updateOne(
+            { _id: new ObjectId(id), email: email },
+            updateQuery
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).send({ message: "Chapter not found or already updated" });
+        }
+
+        res.status(200).send({ message: "Chapter updated successfully", status: 200 });
+    } catch (error) {
+        console.error("Error updating chapter:", error);
+        res.status(500).send({ message: "Error updating chapter" });
+    }
+});
+
+
+// patch a moduleEnd module 
+app.patch('/moduleEnd/:id/:email', async (req, res) => {
+    try {
+        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id), email: req.params.email });
+
+        if (!module) {
+            return res.status(404).send({ message: "Module not found" });
+        }
+        const currentDate = new Date();
+
+        const updateCourseEnd = {
+            $set: {
+                courseEndAt: currentDate
+            },
+        };
+
+        const result = await moduleCollection.updateOne({ _id: new ObjectId(req.params.id), email: req.params.email }, updateCourseEnd);
+
+        res.status(200).send({ message: "Course Ended" });
+    } catch (error) {
+        console.error("Error fetching Course:", error);
+        res.status(500).send({ message: "Error fetching Course" });
+    }
+});
 
 
 //Root Directory of Server
