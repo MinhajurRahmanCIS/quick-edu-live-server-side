@@ -1649,9 +1649,16 @@ app.post('/presentation/:email', async (req, res) => {
         const response = await result.response;
         const text = await response.text();
 
-        // Strip Markdown syntax and parse JSON
-        const cleanedText = stripMarkdown(text);
-        const slides = JSON.parse(cleanedText);
+        // // Strip Markdown syntax and parse JSON
+        // const cleanedText = stripMarkdown(text);
+        // const slides = JSON.parse(cleanedText);
+        const cleanedText = text
+            .replace(/```(?:json)?|```|“|”|‘|’/g, '') // Removes backticks and all curly quotes
+            .replace(/\\n/g, '') // Removes newline escape sequences
+            .replace(/\\+/g, '') // Removes any stray backslashes
+            .trim();
+
+        console.log("Cleaned Text:", cleanedText);
 
         const presentationData = {
             email,
