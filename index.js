@@ -1880,6 +1880,19 @@ app.patch('/moduleEnd/:id/:email', async (req, res) => {
     }
 });
 
+app.get('/certificate/:id/:email', async (req, res) => {
+    try {
+        const module = await moduleCollection.findOne({ _id: new ObjectId(req.params.id), email: req.params.email });
+        if (!module) {
+            return res.status(404).send({ message: "Certificate not found" });
+        }
+        res.send(module);
+    } catch (error) {
+        console.error("Error fetching Certificate:", error);
+        res.status(500).send({ message: "Error fetching Certificate" });
+    }
+});
+
 
 //Root Directory of Server
 app.get('/', (req, res) => {
