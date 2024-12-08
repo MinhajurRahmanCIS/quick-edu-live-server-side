@@ -19,7 +19,8 @@ const { dbConnect,
     reportCollection,
     paymentCollection,
     presentationCollection,
-    moduleCollection
+    moduleCollection,
+    conversations
 } = require('./DBConnection/DBConnection');
 
 //Requiring CRUD Functions
@@ -1897,6 +1898,62 @@ app.get('/certificate/:id/:email', async (req, res) => {
     } catch (error) {
         console.error("Error fetching Certificate:", error);
         res.status(500).send({ message: "Error fetching Certificate" });
+    }
+});
+
+// Main chatbot endpoint
+app.post('/chatbot/email', async (req, res) => {
+    try {
+        const { email, query } = req.body;
+
+        // Validate input
+        if (!email || !query) {
+            return res.status(400).send('Email and query are required');
+        }
+
+        // Generate AI response using Gemini
+        const result = await model.generateContent(
+            `You are an expert AI Professor. Provide a comprehensive, educational, and scholarly response to the following educational question: ${query}. 
+            
+            Guidelines:
+            - Use an academic tone
+            - Provide clear, structured explanation
+            - Include relevant context and examples
+            - Break down complex concepts
+            - Cite general academic principles where applicable`
+        );
+        const response = result.response.text();
+
+        // Save conversation
+        await conversations.insertOne({
+            email,
+            query,
+            response,
+            timestamp: new Date()
+        });
+
+        // Send response
+        res.send(response);
+
+    } catch (error) {
+        console.error('Chatbot Processing Error:', error);
+        res.status(500).send('Failed to process request');
+    }
+});
+
+// Retrieve conversations for a specific email
+app.get('/chatbot/conversations/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const userConversations = await conversations
+            .find({ email })
+            .sort({ timestamp: -1 })
+            .toArray();
+
+        res.send(userConversations);
+    } catch (error) {
+        console.error('Conversations Retrieval Error:', error);
+        res.status(500).send('Failed to retrieve conversations');
     }
 });
 
