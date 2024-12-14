@@ -1947,15 +1947,17 @@ app.get('/chatbot/conversations/:email', async (req, res) => {
         const { email } = req.params;
         const userConversations = await conversations
             .find({ email })
-            .sort({ timestamp: -1 })
+            .sort({ timestamp: 1 }) // Sort in ascending order
+            .limit(50) // Optional: limit to prevent very long lists
             .toArray();
 
-        res.send(userConversations);
+        res.json(userConversations);
     } catch (error) {
         console.error('Conversations Retrieval Error:', error);
-        res.status(500).send('Failed to retrieve conversations');
+        res.status(500).json({ error: 'Failed to retrieve conversations' });
     }
 });
+
 
 
 //Root Directory of Server
