@@ -1922,7 +1922,15 @@ app.post('/chatbot/email', async (req, res) => {
             - Break down complex concepts
             - Cite general academic principles where applicable`
         );
-        const response = result.response.text();
+
+        // Ensure response is correctly extracted
+        let response = result.response.text();
+        
+        // Log raw response for debugging
+        console.log("Raw AI Response:", response);
+
+        // Remove unwanted ** and trim whitespace
+        response = response.replace(/\*\*/g, '').trim();
 
         // Save conversation
         await conversations.insertOne({
@@ -1932,14 +1940,16 @@ app.post('/chatbot/email', async (req, res) => {
             timestamp: new Date()
         });
 
-        // Send response
+        // Send cleaned response
         res.send(response);
 
     } catch (error) {
-        console.error('Chatbot Processing Error:', error);
-        res.status(500).send('Failed to process request');
+        console.error('Please Try Again', error);
+        res.status(500).send('Failed to process request. Please Try Again!');
     }
 });
+
+
 
 // Retrieve conversations for a specific email
 app.get('/chatbot/conversations/:email', async (req, res) => {
