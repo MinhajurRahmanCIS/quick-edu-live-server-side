@@ -151,7 +151,7 @@ const is_live = false
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: 'https://quickedulive.web.app',
     methods: ['GET', 'POST']
   }
 });
