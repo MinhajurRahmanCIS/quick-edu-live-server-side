@@ -147,14 +147,6 @@ const store_id = process.env.STORE_ID;
 const store_passwd = process.env.STORE_PASSWD
 const is_live = false
 
-// Socket io
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: 'https://quickedulive.web.app',
-    methods: ['GET', 'POST']
-  }
-});
 
 // Users
 // Getting Users 
@@ -1978,42 +1970,6 @@ app.get('/chatbot/conversations/:email', async (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve conversations' });
     }
 });
-
-// Live Class
-
-// In-memory storage for rooms
-const rooms = new Map();
-
-app.get('/', (req, res) => {
-  res.send('Meet Platform API');
-});
-
-// API routes
-app.post('/api/createRoom', (req, res) => {
-  const { roomName } = req.body;
-  const roomId = roomName;
-  rooms.set(roomId, { id: roomId, name: roomName });
-  res.send({ roomId });
-});
-
-app.get('/api/rooms', (req, res) => {
-  res.send(Array.from(rooms.values()));
-});
-
-// Socket.io logic
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('join-room', (roomId, userId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit('user-connected', userId);
-
-    socket.on('disconnect', () => {
-      socket.to(roomId).emit('user-disconnected', userId);
-    });
-  });
-});
-
 
 
 //Root Directory of Server
