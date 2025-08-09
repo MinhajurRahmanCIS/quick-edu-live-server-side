@@ -1503,9 +1503,9 @@ app.post('/payment', async (req, res) => {
         total_amount: amount,
         currency: currency,
         tran_id: transactionId, // use unique tran_id for each api call
-        success_url: `http://localhost:5000/payment/success/${email}/${transactionId}`,
-        fail_url: `http://localhost:5000/payment/fail/${transactionId}`,
-        cancel_url: `http://localhost:5000/payment/cancel/${transactionId}`,
+        success_url: `http://quick-edu-live-server-side.onrender/payment/success/${email}/${transactionId}`,
+        fail_url: `http://quick-edu-live-server-side.onrender/payment/fail/${transactionId}`,
+        cancel_url: `http://quick-edu-live-server-side.onrender/payment/cancel/${transactionId}`,
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Online',
         product_name: 'Ai Paper Checker',
