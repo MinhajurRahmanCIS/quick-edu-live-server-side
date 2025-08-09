@@ -1549,7 +1549,7 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
     const email = req.params.email;
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        return res.redirect(`http://quickedulive.web.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.updateOne({ transactionId }, {
         $set:
@@ -1565,18 +1565,18 @@ app.post('/payment/success/:email/:transactionId', async (req, res) => {
                 account: "Premium"
             }
         });
-        res.redirect(`http://localhost:3000/myhome/payment/success/${email}/${transactionId}`);
+        res.redirect(`http://quickedulive.web.app/myhome/payment/success/${email}/${transactionId}`);
     };
 })
 
 app.post('/payment/fail/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     if (!transactionId) {
-        return res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        return res.redirect(`http://quickedulive.web.app/myhome/payment/fail`);
     }
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`http://localhost:3000/myhome/payment/fail`);
+        res.redirect(`http://quickedulive.web.app/myhome/payment/fail`);
     }
 })
 
@@ -1584,7 +1584,7 @@ app.post('/payment/cancel/:transactionId', async (req, res) => {
     const transactionId = req.params.transactionId;
     const result = await paymentCollection.deleteOne({ transactionId });
     if (result.deletedCount > 0) {
-        res.redirect(`http://localhost:3000/myhome`);
+        res.redirect(`http://quickedulive.web.app/myhome`);
     }
 });
 
